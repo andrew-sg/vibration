@@ -35,10 +35,17 @@ struct state {         // The struct that will capture system states at each tim
   float currentVibe;  // From current sensor
 
   // Accelerometer
-  float 
+  float ax;
+  float ay;
+  float az;
+  float gx;
+  float gy;
+  float gz;
+  float t; // Temperature
 
 };
-state X = { 0, 0, 0, 0, 0 };  // The state object which will track system state.
+state X = { 0, 0, 0, 0, 0, 0, 0, 0, 0};  // The state object which will track system state.
+
 int i = 0;                                   // An increment used throughout program
 int j = 0;                                   // A secondary increment used throughout program
 String inputString;                          // The string being input from the serial terminal. Used to receive commands.
@@ -50,6 +57,7 @@ String errorOutput = "";
 /** SENSORS **/
 #define VIBE_CURRENT 0x41                   // I2C of vibe current sensor
 Adafruit_INA219 ina219_VIBE(VIBE_CURRENT);  // Vibration current sensor
+Adafruit_MPU6050 mpu; // Accelerometer 
 
 /** L298 Motor Controllers **/
 int linear_count = 0;  // The amount of forward/backward progression
@@ -125,6 +133,17 @@ void setup() {
       Serial.println("ina219_VIBE begun.");
   }
   Serial.println("Current sensor setup complete.");
+
+  // Try to initialize!
+  Serial.println("---------(2)");
+  Serial.println("Setting up accelerometer.");
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 Found!");
 
   // Linear Actuator Setup
   Serial.println("---------(2)");
@@ -240,14 +259,18 @@ void loop() {
  * @param {state} X The system state struct.
  */
 void updateStates() {
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
   X.time = millis();                        // Time in ms
   X.currentVibe = ina219_VIBE.getCurrent_mA();  // Servo 1 current
-  X.ax = 0;
-  X.ay = 0;
-  X.az = 0;
-  X.gx = 0;
-  X.gy = 0;
-  X.gz = 0;
+  X.ax = a.acceleration.x;
+  X.ay = a.acceleration.y;
+  X.az = a.acceleration.z;
+  X.gx = g.gyro.x;
+  X.gy = g.gyro.y;
+  X.gz = g.gyro.z;
+  X.t = temp.temperature;
 }
 
 
